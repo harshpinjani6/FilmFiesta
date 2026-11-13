@@ -16,7 +16,7 @@ const { movies } = useContext(MovieContext);
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#111827] px-5 py-12">
+    <main className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
 
       <div className="mx-auto max-w-7xl">
 

@@ -54,7 +54,7 @@ function Header() {
           </NavLink>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:block">
+          <div className="hidden xl:block">
             <ul className="flex items-center gap-6">
               <li><NavLink to="/" className={navClass}>Home</NavLink></li>
               <li><NavLink to="/popular" className={navClass}>Popular</NavLink></li>
@@ -65,7 +65,7 @@ function Header() {
           </div>
 
           {/* Desktop Right */}
-          <div className="hidden items-center gap-3 md:flex">
+          <div className="hidden items-center gap-3 xl:flex">
             <NotificationBell />
 
             <button
@@ -122,7 +122,7 @@ function Header() {
           </div>
 
           {/* Mobile Right */}
-          <div className="flex items-center gap-2 md:hidden">
+          <div className="flex items-center gap-2 xl:hidden">
             <NotificationBell />
 
             <button
@@ -145,7 +145,7 @@ function Header() {
 
         {/* Mobile Menu */}
         {showMenu && (
-          <div className="mt-5 border-t border-slate-700 pt-5 md:hidden">
+          <div className="mt-5 border-t border-slate-700 pt-5 xl:hidden">
 
             <div
               onClick={() => mobileSearchInputRef.current?.focus()}

@@ -41,6 +41,7 @@ function Register() {
     <div className="flex min-h-[75vh] items-center justify-center px-4 py-12">
       <form
         onSubmit={handleSubmit}
+        autoComplete="off"
         className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-gray-900 shadow-xl"
       >
         <h1 className="mb-2 text-center text-3xl font-bold">
@@ -70,6 +71,8 @@ function Register() {
           onChange={(e) => setName(e.target.value)}
           placeholder="Enter your name"
           className="mb-5 w-full rounded-lg border border-gray-300 p-3 outline-none focus:border-purple-600"
+          name="register-name"
+          autoComplete="off"
         />
 
         <label className="mb-2 block text-sm font-medium">Email</label>
@@ -80,6 +83,8 @@ function Register() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Enter your email"
           className="mb-5 w-full rounded-lg border border-gray-300 p-3 outline-none focus:border-purple-600"
+          name="register-email"
+          autoComplete="off"
         />
 
         <label className="mb-2 block text-sm font-medium">Password</label>
@@ -91,7 +96,9 @@ function Register() {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Minimum 8 characters"
           className="mb-6 w-full rounded-lg border border-gray-300 p-3 outline-none focus:border-purple-600"
-        />
+          name="register-password"
+          autoComplete="new-password"
+            />
 
         <button
           type="submit"

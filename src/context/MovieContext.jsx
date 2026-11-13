@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 import { socket } from "../socket";
+import { useAuth } from "./AuthContext";
 
 export const MovieContext = createContext({
   movies: [],
@@ -21,13 +22,25 @@ export const MovieContext = createContext({
 });
 
 export function MovieProvider({ children }) {
-  // Movies from REST API
+  const { user, loading: authLoading } = useAuth();
+  const userId = user?.id || user?._id || null;
+
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notifications, setNotifications] = useState([]);
 
-  // Fetch movies from backend API
+  const [favorites, setFavorites] = useState([]);
+  const [favoritesReady, setFavoritesReady] = useState(false);
+
+  const [search, setSearch] = useState("");
+
+  const [darkMode, setDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem("filmfiesta-theme");
+    return savedTheme ? savedTheme === "dark" : true;
+  });
+
+  // Fetch movies
   useEffect(() => {
     const fetchMovies = async () => {
       try {
@@ -35,18 +48,13 @@ export function MovieProvider({ children }) {
         setError("");
 
         const API_URL = (
-          import.meta.env.VITE_API_URL ||
-          "http://localhost:5000"
+          import.meta.env.VITE_API_URL || "http://localhost:5000"
         ).replace(/\/+$/, "");
 
-        const response = await fetch(
-          `${API_URL}/api/movies`
-        );
+        const response = await fetch(`${API_URL}/api/movies`);
 
         if (!response.ok) {
-          throw new Error(
-            `Failed to fetch movies (${response.status})`
-          );
+          throw new Error(`Failed to fetch movies (${response.status})`);
         }
 
         const data = await response.json();
@@ -67,164 +75,114 @@ export function MovieProvider({ children }) {
     fetchMovies();
   }, []);
 
-  // Socket.IO connection and real-time notifications
+  // Socket.IO
   useEffect(() => {
-
     socket.connect();
 
-    // Connection event
-    socket.on("connect", () => {
+    const handleConnect = () => {
       console.log("Socket connected:", socket.id);
-    });
+    };
 
-    // Disconnection event
-    socket.on("disconnect", () => {
+    const handleDisconnect = () => {
       console.log("Socket disconnected");
-    });
+    };
 
-    // Movie created notification
-    const handleMovieCreated = (data) => {
+    const handleMovieEvent = (type) => (data) => {
       setNotifications((prev) => [
         {
           ...data,
           id: Date.now() + Math.random(),
-          type: "created",
+          type,
           read: false,
         },
         ...prev,
       ]);
-
-      console.log("Movie created:", data);
     };
 
-    // Movie updated notification
-    const handleMovieUpdated = (data) => {
-      setNotifications((prev) => [
-        {
-          ...data,
-          id: Date.now() + Math.random(),
-          type: "updated",
-          read: false,
-        },
-        ...prev,
-      ]);
+    const created = handleMovieEvent("created");
+    const updated = handleMovieEvent("updated");
+    const deleted = handleMovieEvent("deleted");
 
-      console.log("Movie updated:", data);
-    };
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+    socket.on("movie:created", created);
+    socket.on("movie:updated", updated);
+    socket.on("movie:deleted", deleted);
 
-    // Movie deleted notification
-    const handleMovieDeleted = (data) => {
-      setNotifications((prev) => [
-        {
-          ...data,
-          id: Date.now() + Math.random(),
-          type: "deleted",
-          read: false,
-        },
-        ...prev,
-      ]);
-
-      console.log("Movie deleted:", data);
-    };
-
-    // Register event listeners
-    socket.on("movie:created", handleMovieCreated);
-    socket.on("movie:updated", handleMovieUpdated);
-    socket.on("movie:deleted", handleMovieDeleted);
-
-    // Cleanup
     return () => {
-      socket.off("connect");
-      socket.off("disconnect");
-
-      socket.off("movie:created", handleMovieCreated);
-      socket.off("movie:updated", handleMovieUpdated);
-      socket.off("movie:deleted", handleMovieDeleted);
-
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.off("movie:created", created);
+      socket.off("movie:updated", updated);
+      socket.off("movie:deleted", deleted);
       socket.disconnect();
     };
-
   }, []);
 
-  // Favorites
-  const [favorites, setFavorites] = useState(() => {
-    try {
-      const savedFavorites = localStorage.getItem(
-        "filmfiesta-favorites"
-      );
-
-      return savedFavorites
-        ? JSON.parse(savedFavorites)
-        : [];
-    } catch {
-      return [];
-    }
-  });
-
-  // Search
-  const [search, setSearch] = useState("");
-
-  // Dark / Light Mode
-  const [darkMode, setDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem("filmfiesta-theme");
-
-    if (savedTheme) {
-      return savedTheme === "dark";
-    }
-
-    return true;
-  });
-
-  // Save favorites
+  // Load favorites belonging to the current user
   useEffect(() => {
-    localStorage.setItem(
-      "filmfiesta-favorites",
-      JSON.stringify(favorites)
-    );
-  }, [favorites]);
+    if (authLoading) return;
 
-  // Apply and save theme
+    setFavoritesReady(false);
+
+    const storageKey = userId
+      ? `filmfiesta-favorites-${userId}`
+      : "filmfiesta-favorites-guest";
+
+    try {
+      const saved = localStorage.getItem(storageKey);
+      setFavorites(saved ? JSON.parse(saved) : []);
+    } catch {
+      setFavorites([]);
+    }
+
+    setFavoritesReady(true);
+  }, [userId, authLoading]);
+
+  // Save favorites for the current user
+  useEffect(() => {
+    if (authLoading || !favoritesReady) return;
+
+    const storageKey = userId
+      ? `filmfiesta-favorites-${userId}`
+      : "filmfiesta-favorites-guest";
+
+    localStorage.setItem(storageKey, JSON.stringify(favorites));
+  }, [favorites, userId, authLoading, favoritesReady]);
+
+  // Save theme
   useEffect(() => {
     localStorage.setItem(
       "filmfiesta-theme",
       darkMode ? "dark" : "light"
     );
 
-    document.body.classList.toggle(
-      "light-mode",
-      !darkMode
-    );
+    document.body.classList.toggle("light-mode", !darkMode);
   }, [darkMode]);
 
-  // Toggle theme
   const toggleDarkMode = useCallback(() => {
-    setDarkMode((currentMode) => !currentMode);
+    setDarkMode((current) => !current);
   }, []);
 
-  // Toggle favorite
   const toggleFavorite = useCallback((movie) => {
-    setFavorites((currentFavorites) => {
-      const alreadyFavorite = currentFavorites.some(
-        (item) => item.id === movie.id
+    setFavorites((current) => {
+      const exists = current.some(
+        (item) => String(item.id) === String(movie.id)
       );
 
-      if (alreadyFavorite) {
-        return currentFavorites.filter(
-          (item) => item.id !== movie.id
-        );
-      }
-
-      return [...currentFavorites, movie];
+      return exists
+        ? current.filter(
+            (item) => String(item.id) !== String(movie.id)
+          )
+        : [...current, movie];
     });
   }, []);
 
-  // Check favorite
   const isFavorite = useCallback(
-    (movieId) => {
-      return favorites.some(
-        (movie) => movie.id === movieId
-      );
-    },
+    (movieId) =>
+      favorites.some(
+        (movie) => String(movie.id) === String(movieId)
+      ),
     [favorites]
   );
 
