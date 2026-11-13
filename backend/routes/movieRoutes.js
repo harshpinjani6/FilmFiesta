@@ -8,6 +8,47 @@ import {
 
 const router = express.Router();
 
+const allowedMovieFields = [
+  "id",
+  "title",
+  "image",
+  "rating",
+  "genre",
+  "year",
+  "language",
+  "type",
+];
+
+function validateMovieBody(body, isUpdate = false) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return "Invalid request body";
+  }
+
+  const keys = Object.keys(body);
+
+  if (keys.length === 0) {
+    return "Request body cannot be empty";
+  }
+
+  const unknownFields = keys.filter(
+    (key) => !allowedMovieFields.includes(key)
+  );
+
+  if (unknownFields.length > 0) {
+    return `Unknown fields: ${unknownFields.join(", ")}`;
+  }
+
+  if (isUpdate && body.id !== undefined) {
+    return "Movie ID cannot be changed";
+  }
+
+  return null;
+}
+
+function validateMovieId(id) {
+  return /^\d+$/.test(id) && Number(id) > 0;
+}
+
 // GET all movies - Public access
 router.get("/", async (req, res) => {
   try {
@@ -44,34 +85,60 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST new movie - Admin only
+
 router.post("/", protect, authorize("admin"), async (req, res) => {
   try {
+    const validationError = validateMovieBody(req.body);
+
+    if (validationError) {
+      return res.status(400).json({
+        message: validationError,
+      });
+    }
+
     const movie = await Movie.create(req.body);
-    res.status(201).json(movie);
+
     const io = req.app.get("io");
 
-    io.emit("movie:created", {
-      message: `New movie "${movie.title}" has been added!`,
-      movieId: movie.id,
-      title: movie.title,
-    });
+    if (io) {
+      io.emit("movie:created", {
+        message: `New movie "${movie.title}" has been added!`,
+        movieId: movie.id,
+        title: movie.title,
+      });
+    }
+
+    return res.status(201).json(movie);
   } catch (error) {
-    res.status(400).json({
-      message: "Failed to create movie",
+    return res.status(400).json({
+      message: "Movie validation failed",
       error: error.message,
     });
   }
 });
 
-
-
 // PUT update movie - Admin only
 // PUT update movie - Admin only
+
 router.put("/:id", protect, authorize("admin"), async (req, res) => {
   try {
+    if (!validateMovieId(req.params.id)) {
+      return res.status(400).json({
+        message: "Invalid movie ID",
+      });
+    }
+
+    const validationError = validateMovieBody(req.body, true);
+
+    if (validationError) {
+      return res.status(400).json({
+        message: validationError,
+      });
+    }
+
     const movie = await Movie.findOneAndUpdate(
       { id: Number(req.params.id) },
-      req.body,
+      { $set: req.body },
       { new: true, runValidators: true }
     );
 
@@ -81,20 +148,20 @@ router.put("/:id", protect, authorize("admin"), async (req, res) => {
       });
     }
 
-    // Emit real-time notification
     const io = req.app.get("io");
 
-    io.emit("movie:updated", {
-      message: `Movie "${movie.title}" has been updated!`,
-      movieId: movie.id,
-      title: movie.title,
-    });
+    if (io) {
+      io.emit("movie:updated", {
+        message: `Movie "${movie.title}" has been updated!`,
+        movieId: movie.id,
+        title: movie.title,
+      });
+    }
 
-    res.status(200).json(movie);
-
+    return res.status(200).json(movie);
   } catch (error) {
-    res.status(400).json({
-      message: "Failed to update movie",
+    return res.status(400).json({
+      message: "Movie validation failed",
       error: error.message,
     });
   }

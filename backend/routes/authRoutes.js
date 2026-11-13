@@ -26,7 +26,37 @@ router.post("/register", async (req, res) => {
       });
     }
 
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        message:
+          "Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number and one special character",
+      });
+    }
+
+    if (name.trim().length < 2 || name.trim().length > 50) {
+      return res.status(400).json({
+        message: "Name must be between 2 and 50 characters",
+      });
+    }
+
     const normalizedEmail = email.trim().toLowerCase();
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({
+        message: "Please provide a valid email address",
+      });
+    }
+
+    if (name.trim().length < 2 || name.trim().length > 50) {
+      return res.status(400).json({
+        message: "Name must be between 2 and 50 characters",
+      });
+    }
 
     const existingUser = await User.findOne({
       email: normalizedEmail,
