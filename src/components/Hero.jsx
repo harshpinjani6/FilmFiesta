@@ -34,15 +34,32 @@ function Hero() {
           recommendations for your next movie night.
         </p>
 
+        
+        
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <button className="rounded-lg bg-[#b89236] px-6 py-3 font-semibold text-white transition hover:bg-[#d1b36b]">
+          <button
+            onClick={() =>
+              document.getElementById("popular-movies")?.scrollIntoView({
+                behavior: "smooth",
+              })
+            }
+            className="rounded-lg bg-[#b89236] px-6 py-3 font-semibold text-white transition hover:bg-[#d1b36b]"
+          >
             Explore Movies
           </button>
 
-          <button className="rounded-lg border border-gray-500 px-6 py-3 font-semibold text-white transition hover:bg-white hover:text-[#111827]">
+          <button
+            onClick={() =>
+              document.getElementById("recommended")?.scrollIntoView({
+                behavior: "smooth",
+              })
+            }
+            className="rounded-lg border border-gray-500 px-6 py-3 font-semibold text-white transition hover:bg-white hover:text-[#111827]"
+          >
             Get Recommendations
           </button>
         </div>
+        
       </div>
     </section>
   );
