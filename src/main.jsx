@@ -1,16 +1,19 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import './index.css'
-import App from './App.jsx'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import "./index.css";
+import App from "./App.jsx";
 import { MovieProvider } from "./context/MovieContext";
+import { AuthProvider } from "./context/AuthContext";
 
-createRoot(document.getElementById('root')).render(
+createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
-    <MovieProvider>
-    <App />
-    </MovieProvider>
+      <AuthProvider>
+        <MovieProvider>
+          <App />
+        </MovieProvider>
+      </AuthProvider>
     </BrowserRouter>
-  </StrictMode>,
-)
+  </StrictMode>
+);

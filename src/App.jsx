@@ -1,8 +1,6 @@
 import { useContext } from "react";
 import { Routes, Route } from "react-router-dom";
-
 import Header from "./components/Header";
-
 import Home from "./pages/Home";
 import Popular from "./pages/Popular";
 import Upcoming from "./pages/Upcoming";
@@ -10,7 +8,8 @@ import TopRatedPage from "./pages/TopRatedPage";
 import GenrePage from "./pages/GenrePage";
 import Favorites from "./pages/Favorites";
 import MovieDetails from "./pages/MovieDetails";
-
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import { MovieContext } from "./context/MovieContext";
 
 function App() {
@@ -24,49 +23,22 @@ function App() {
           : "bg-white text-[#172033]"
       }`}
     >
-
       <Header />
 
       <main className="flex-1">
-
         <Routes>
-
-          <Route
-            path="/"
-            element={<Home />}
-          />
-
-          <Route
-            path="/popular"
-            element={<Popular />}
-          />
-
-          <Route
-            path="/top-rated"
-            element={<TopRatedPage />}
-          />
-
-          <Route
-            path="/upcoming"
-            element={<Upcoming />}
-          />
-
-          <Route
-            path="/genres/:genre"
-            element={<GenrePage />}
-          />
-
-          <Route
-            path="/favorites"
-            element={<Favorites />}
-          />
-
+          <Route path="/" element={<Home />} />
+          <Route path="/popular" element={<Popular />} />
+          <Route path="/top-rated" element={<TopRatedPage />} />
+          <Route path="/upcoming" element={<Upcoming />} />
+          <Route path="/genres/:genre" element={<GenrePage />} />
+          <Route path="/favorites" element={<Favorites />} />
           <Route path="/movie/:id" element={<MovieDetails />} />
+
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Routes>
-
       </main>
-
-
     </div>
   );
 }
