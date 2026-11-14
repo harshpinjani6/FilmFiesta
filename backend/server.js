@@ -20,6 +20,7 @@ const allowedOrigins = [
   "https://film-fiesta-e4iag1v0p-palak-7f5b.vercel.app",
   "https://film-fiesta-seven.vercel.app",
   process.env.FRONTEND_URL,
+  "https://film-fiesta-nine.vercel.app",
 ].filter(Boolean);
 
 const httpServer = createServer(app);
