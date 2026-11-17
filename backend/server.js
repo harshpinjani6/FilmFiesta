@@ -22,14 +22,17 @@ dotenv.config();
 
 const app = express();
 // Allowed frontend origins
+
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
   "https://film-fiesta-e4iag1v0p-palak-7f5b.vercel.app",
   "https://film-fiesta-seven.vercel.app",
-  process.env.FRONTEND_URL,
   "https://film-fiesta-nine.vercel.app",
+  "https://filmfiesta-docker-frontend.onrender.com",
+  process.env.FRONTEND_URL,
 ].filter(Boolean);
+
 
 const httpServer = createServer(app);
 
