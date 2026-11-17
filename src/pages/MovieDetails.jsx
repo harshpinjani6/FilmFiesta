@@ -1,10 +1,16 @@
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import { Link, useParams } from "react-router-dom";
 import { MovieContext } from "../context/MovieContext";
 import Footer from "../components/Footer";
 
 function MovieDetails() {
   const { id } = useParams();
+  const { user } = useAuth();
+  const lastTrackedView = useRef(null);
+  const [isWatched, setIsWatched] = useState(false);
+  const [watchedLoading, setWatchedLoading] = useState(false);
+  const [watchedError, setWatchedError] = useState("");
 
   const {
     movies,
@@ -23,6 +29,156 @@ function MovieDetails() {
       ? `${movie.title} - FilmFiesta`
       : "Movie Details - FilmFiesta";
   }, [movie]);
+
+  useEffect(() => {
+    if (!movie || !user || user.role !== "user") return;
+
+    const movieId = Number(movie.id);
+    const trackingKey = `${user._id || user.id}:${movieId}`;
+
+    if (lastTrackedView.current === trackingKey) return;
+
+    lastTrackedView.current = trackingKey;
+
+    const token = sessionStorage.getItem("filmfiesta-token");
+
+    if (!token) return;
+
+    const controller = new AbortController();
+
+    const recordView = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/activities`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              movieId,
+              action: "movie_viewed",
+            }),
+            signal: controller.signal,
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to record movie view");
+        }
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error("Movie view tracking error:", error);
+        }
+      }
+    };
+
+    recordView();
+
+    return () => controller.abort();
+  }, [movie?.id, user]);
+
+  const API_URL = (
+    import.meta.env.VITE_API_URL || "http://localhost:5000"
+  ).replace(/\/+$/, "");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    setIsWatched(false);
+    setWatchedError("");
+    setWatchedLoading(false);
+
+    if (!movie || !user || user.role !== "user") {
+      return;
+    }
+
+    const token = sessionStorage.getItem("filmfiesta-token");
+    if (!token) return;
+
+    const loadWatched = async () => {
+      setWatchedLoading(true);
+
+      try {
+        const response = await fetch(`${API_URL}/api/watched`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch watched movies");
+        }
+
+        const records = await response.json();
+
+        if (!Array.isArray(records)) {
+          throw new Error("Invalid watched movies response");
+        }
+
+        if (!controller.signal.aborted) {
+          setIsWatched(
+            records.some(
+              (item) => Number(item.movieId) === Number(movie.id)
+            )
+          );
+        }
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error(error);
+          setWatchedError("Unable to load watched status.");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setWatchedLoading(false);
+        }
+      }
+    };
+
+    loadWatched();
+
+    return () => controller.abort();
+  }, [movie?.id, user?.id, user?._id, user?.role]);
+
+  const handleMarkWatched = async () => {
+    if (!movie || !user || user.role !== "user") return;
+    if (isWatched || watchedLoading) return;
+
+    const token = sessionStorage.getItem("filmfiesta-token");
+
+    if (!token) {
+      setWatchedError("Please log in again.");
+      return;
+    }
+
+    setWatchedLoading(true);
+    setWatchedError("");
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/watched/${movie.id}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to mark movie as watched");
+      }
+
+      setIsWatched(true);
+    } catch (error) {
+      console.error(error);
+      setWatchedError("Unable to mark movie as watched.");
+    } finally {
+      setWatchedLoading(false);
+    }
+  };
 
   // Movie not found
   if (!movie) {
@@ -203,21 +359,33 @@ function MovieDetails() {
                       : "♡ Add to Favorites"}
                   </button>
 
-                  {/* Watch Button */}
-                  <button
-                    className="rounded-lg border border-gray-500 px-6 py-3 font-semibold text-white transition hover:bg-white hover:text-[#111827]"
-                  >
-                    ▶ Watch
-                  </button>
-
+                  {/* Mark as Watched Button */}
+                  {user?.role === "user" && (
+                    <button
+                      onClick={handleMarkWatched}
+                      disabled={watchedLoading || isWatched}
+                      className={`rounded-lg px-6 py-3 font-semibold transition ${
+                        isWatched
+                          ? "cursor-default bg-green-600 text-white"
+                          : "border border-gray-500 text-white hover:bg-white hover:text-[#111827]"
+                      } disabled:opacity-70`}
+                    >
+                      {watchedLoading
+                        ? "Loading..."
+                        : isWatched
+                          ? "✓ Watched"
+                          : "✓ Mark as Watched"}
+                    </button>
+                  )}
+                  {watchedError && (
+                    <p className="w-full text-sm text-red-400">
+                      {watchedError}
+                    </p>
+                  )}
                 </div>
-
               </div>
-
             </div>
-
           </div>
-
         </section>
 
 

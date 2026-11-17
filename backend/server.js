@@ -10,6 +10,14 @@ import rateLimit from "express-rate-limit";
 import authRoutes from "./routes/authRoutes.js";
 import movieRoutes from "./routes/movieRoutes.js";
 
+import jwt from "jsonwebtoken";
+import User from "./models/User.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import activityRoutes from "./routes/activityRoutes.js";
+import favoriteRoutes from "./routes/favoriteRoutes.js";
+import watchedRoutes from "./routes/watchedRoutes.js";
+import analyticsRoutes from "./routes/analyticsRoutes.js";
+
 dotenv.config();
 
 const app = express();
@@ -32,12 +40,49 @@ const io = new Server(httpServer, {
     credentials: true,
   },
 });
+
 app.set("io", io);
+
+const USER_NOTIFICATION_ROOM = "movie-notifications-users";
+
+// Verify JWT before allowing Socket.IO connection
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token;
+
+    if (!token) {
+      return next(new Error("Authentication required"));
+    }
+
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET
+    );
+
+    const user = await User.findById(decoded.id).select("role");
+
+    if (!user) {
+      return next(new Error("User not found"));
+    }
+
+    socket.data.userId = String(user._id);
+    socket.data.role = user.role;
+
+    next();
+  } catch (error) {
+    next(new Error("Invalid or expired token"));
+  }
+});
+
 io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
+  if (socket.data.role === "user") {
+    socket.join(USER_NOTIFICATION_ROOM);
+  }
+
+  console.log("Socket connected:", socket.id);
 
   socket.on("disconnect", () => {
-    console.log("A user disconnected:", socket.id);
+    console.log("Socket disconnected:", socket.id);
   });
 });
 
@@ -108,6 +153,11 @@ app.get("/health", (req, res) => {
 // API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/movies", apiLimiter, movieRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/activities", activityRoutes);
+app.use("/api/favorites", favoriteRoutes);
+app.use("/api/watched", watchedRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // Handle unknown routes
 app.use((req, res) => {

@@ -61,6 +61,31 @@ function Header() {
               <li><NavLink to="/top-rated" className={navClass}>Top Rated</NavLink></li>
               <li><NavLink to="/upcoming" className={navClass}>Upcoming</NavLink></li>
               <li><NavLink to="/favorites" className={navClass}>Favorites</NavLink></li>
+
+              {/* Watch History - Normal Users Only */}
+              {user?.role === "user" && (
+                <li>
+                  <NavLink to="/watch-history" className={navClass}>
+                    Watch History
+                  </NavLink>
+                </li>
+              )}
+              
+              {user?.role === "admin" && (
+                <>
+                  <li>
+                    <NavLink to="/admin" className={navClass}>
+                      Admin Dashboard
+                    </NavLink>
+                  </li>
+
+                  <li>
+                    <NavLink to="/admin/profile" className={navClass}>
+                      Admin Profile
+                    </NavLink>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
 
@@ -162,13 +187,24 @@ function Header() {
               />
             </div>
 
-            <ul className="flex flex-col gap-4 text-center">
+            <ul className="flex flex-col gap-4 text-center">              
               {[
                 ["/", "Home"],
                 ["/popular", "Popular"],
                 ["/top-rated", "Top Rated"],
                 ["/upcoming", "Upcoming"],
                 ["/favorites", "Favorites"],
+
+                ...(user?.role === "user"
+                  ? [["/watch-history", "Watch History"]]
+                  : []),
+
+                ...(user?.role === "admin"
+                  ? [
+                      ["/admin", "Admin Dashboard"],
+                      ["/admin/profile", "Admin Profile"],
+                    ]
+                  : []),
               ].map(([path, label]) => (
                 <li key={path}>
                   <NavLink

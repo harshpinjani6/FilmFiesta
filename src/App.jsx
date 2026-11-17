@@ -11,6 +11,13 @@ import MovieDetails from "./pages/MovieDetails";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import { MovieContext } from "./context/MovieContext";
+import AddMovie from "./pages/admin/AddMovie";
+
+import AdminRoute from "./components/AdminRoute";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import EditMovie from "./pages/admin/EditMovie";
+import AdminProfile from "./pages/admin/AdminProfile";
+import WatchHistory from "./pages/WatchHistory";
 
 function App() {
   const { darkMode } = useContext(MovieContext);
@@ -37,6 +44,29 @@ function App() {
 
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/watch-history" element={<WatchHistory />} />
+          
+        <Route element={<AdminRoute />}>
+          <Route
+            path="/admin"
+            element={<AdminDashboard />}
+          />
+
+          <Route
+            path="/admin/add-movie"
+            element={<AddMovie />}
+          />
+
+          <Route
+            path="/admin/edit-movie/:id"
+            element={<EditMovie />}
+          />
+
+          <Route
+            path="/admin/profile"
+            element={<AdminProfile />}
+          />
+        </Route>
         </Routes>
       </main>
     </div>

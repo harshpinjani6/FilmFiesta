@@ -11,18 +11,22 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Restore login separately for each tab
   useEffect(() => {
-    const token = localStorage.getItem("filmfiesta-token");
+    const token = sessionStorage.getItem("filmfiesta-token");
 
     if (!token) {
       setLoading(false);
       return;
     }
 
+    const controller = new AbortController();
+
     fetch(`${API_URL}/api/auth/me`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
+      signal: controller.signal,
     })
       .then(async (response) => {
         const data = await response.json();
@@ -33,17 +37,28 @@ export function AuthProvider({ children }) {
 
         setUser(data.user);
       })
-      .catch(() => {
-        localStorage.removeItem("filmfiesta-token");
+      .catch((error) => {
+        if (error.name === "AbortError") return;
+
+        sessionStorage.removeItem("filmfiesta-token");
         setUser(null);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      });
+
+    return () => controller.abort();
   }, []);
 
+  // Login
   const login = async (email, password) => {
     const response = await fetch(`${API_URL}/api/auth/login`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ email, password }),
     });
 
@@ -53,16 +68,20 @@ export function AuthProvider({ children }) {
       throw new Error(data.message || "Login failed");
     }
 
-    localStorage.setItem("filmfiesta-token", data.token);
+    // Store token only in the current tab
+    sessionStorage.setItem("filmfiesta-token", data.token);
     setUser(data.user);
 
     return data;
   };
 
+  // Register
   const register = async (name, email, password) => {
     const response = await fetch(`${API_URL}/api/auth/register`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ name, email, password }),
     });
 
@@ -75,8 +94,9 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  // Logout only from current tab
   const logout = () => {
-    localStorage.removeItem("filmfiesta-token");
+    sessionStorage.removeItem("filmfiesta-token");
     setUser(null);
   };
 

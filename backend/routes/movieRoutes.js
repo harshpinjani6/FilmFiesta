@@ -5,6 +5,7 @@ import {
   protect,
   authorize,
 } from "../middleware/authMiddleware.js";
+import { publishMovieNotification } from "../utils/publishMovieNotification.js";
 
 const router = express.Router();
 
@@ -85,7 +86,6 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST new movie - Admin only
-
 router.post("/", protect, authorize("admin"), async (req, res) => {
   try {
     const validationError = validateMovieBody(req.body);
@@ -98,15 +98,7 @@ router.post("/", protect, authorize("admin"), async (req, res) => {
 
     const movie = await Movie.create(req.body);
 
-    const io = req.app.get("io");
-
-    if (io) {
-      io.emit("movie:created", {
-        message: `New movie "${movie.title}" has been added!`,
-        movieId: movie.id,
-        title: movie.title,
-      });
-    }
+    await publishMovieNotification(req, "movie:created", movie);
 
     return res.status(201).json(movie);
   } catch (error) {
@@ -148,15 +140,7 @@ router.put("/:id", protect, authorize("admin"), async (req, res) => {
       });
     }
 
-    const io = req.app.get("io");
-
-    if (io) {
-      io.emit("movie:updated", {
-        message: `Movie "${movie.title}" has been updated!`,
-        movieId: movie.id,
-        title: movie.title,
-      });
-    }
+    await publishMovieNotification(req, "movie:updated", movie);
 
     return res.status(200).json(movie);
   } catch (error) {
@@ -182,13 +166,8 @@ router.delete("/:id", protect, authorize("admin"), async (req, res) => {
     }
 
     // Emit real-time notification
-    const io = req.app.get("io");
-
-    io.emit("movie:deleted", {
-      message: `Movie "${movie.title}" has been deleted!`,
-      movieId: movie.id,
-      title: movie.title,
-    });
+    
+    await publishMovieNotification(req, "movie:deleted", movie);
 
     res.status(200).json({
       message: "Movie deleted successfully",
