@@ -1,9 +1,11 @@
+
 import { useContext, useEffect } from "react";
 import MovieCard from "../components/MovieCard";
 import { useMovieSearch } from "../hooks/useMovieSearch";
 import { MovieContext } from "../context/MovieContext";
+
 function Upcoming() {
-const { movies } = useContext(MovieContext);
+  const { movies } = useContext(MovieContext);
 
   const upcomingMovies = movies.filter(
     (movie) => movie.type === "upcoming"
@@ -16,15 +18,16 @@ const { movies } = useContext(MovieContext);
   }, []);
 
   return (
-    <main className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+    <main className="min-h-screen w-full bg-[#111827] px-4 py-10 sm:px-6 lg:px-8">
 
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto w-full max-w-7xl">
 
+        {/* Page Heading */}
         <p className="text-xs font-bold tracking-[3px] text-[#d1b36b]">
           FILMFiesta
         </p>
 
-        <h1 className="mt-2 text-3xl font-bold text-white">
+        <h1 className="mt-2 text-3xl font-bold text-white md:text-4xl">
           Upcoming Movies
         </h1>
 
@@ -32,9 +35,10 @@ const { movies } = useContext(MovieContext);
           Movies coming soon.
         </p>
 
+        {/* Upcoming Movie Cards */}
         {filteredMovies.length > 0 ? (
 
-          <div className="mt-10 grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div className="mt-10 grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
 
             {filteredMovies.map((movie) => (
               <MovieCard
@@ -66,7 +70,6 @@ const { movies } = useContext(MovieContext);
         )}
 
       </div>
-
     </main>
   );
 }
